@@ -2,7 +2,6 @@
   "use strict";
 
   const STORAGE_RECORDS = "stand-out-by-logic.records";
-  const STORAGE_GUIDE_SEEN = "stand-out-by-logic.guide-seen";
 
   const difficultyBlanks = {
     easy: 36,
@@ -39,10 +38,20 @@
     clearRecordsBtn: document.getElementById("clearRecordsBtn"),
     recordsList: document.getElementById("recordsList"),
     mascotLine: document.getElementById("mascotLine"),
-    guideModal: document.getElementById("guideModal"),
-    guideModalClose: document.getElementById("guideModalClose"),
-    guideModalDone: document.getElementById("guideModalDone"),
     toast: document.getElementById("toast"),
+    classicModeBtn: document.getElementById("classicModeBtn"),
+    battleModeBtn: document.getElementById("battleModeBtn"),
+    battleDashboard: document.getElementById("battleDashboard"),
+    battleScore: document.getElementById("battleScore"),
+    battleLevel: document.getElementById("battleLevel"),
+    battleInterval: document.getElementById("battleInterval"),
+    battleSkills: document.getElementById("battleSkills"),
+    skillModal: document.getElementById("skillModal"),
+    skillChoices: document.getElementById("skillChoices"),
+    guidePanel: document.querySelector(".guide-panel ul"),
+    guideTitle: document.querySelector(".guide-panel .panel-title"),
+    seedRow: document.querySelector(".seed-row"),
+    settings: document.querySelector(".settings"),
   };
 
   const state = {
@@ -67,6 +76,47 @@
     records: loadJson(STORAGE_RECORDS, []),
     longPressTimer: null,
     longPressTriggered: false,
+    mode: "classic",
+    battle: {
+      timerId: null,
+      score: 0,
+      level: 1,
+      nextLevelScore: 5,
+      interval: 2000,
+      paused: false,
+      choosingSkill: false,
+      rng: Math.random,
+      skills: { speed: 0, chain: 0, power: 0 },
+      selectedSkills: [],
+      completedRows: new Set(),
+      completedCols: new Set(),
+      completedBoxes: new Set(),
+    },
+  };
+
+  const battleSkillPool = [
+    { id: "speed", name: "加速", description: "自动填数间隔减少 0.3 秒，最低 0.5 秒。" },
+    { id: "chain", name: "连锁", description: "完成一行时，额外随机自动填入 1 个正确格子。" },
+    { id: "power", name: "强化", description: "完成行、列、宫时额外 +1 分。" },
+  ];
+
+  const guideCopy = {
+    classic: [
+      ["左键单击", "选中格子，并高亮所有相同数字"],
+      ["滚轮", "上滚 +1，下滚 -1"],
+      ["长按", "清除当前格"],
+      ["右键长按", "确认当前临时数字"],
+      ["确认", "正确则固定，错误扣 1 次机会"],
+      ["提示", "每局 3 次，直接填入正确数字"],
+    ],
+    battle: [
+      ["玩法", "棋盘按当前难度生成部分题面"],
+      ["自动填数", "系统每隔一段时间随机补 1 个空格"],
+      ["得分", "完成行/列 +1，完成宫 +2"],
+      ["升级", "每 5 分弹出三选一技能"],
+      ["暂停", "选技能或页面离开前台时完全暂停"],
+      ["循环", "整盘填满后保留技能并进入下一轮"],
+    ],
   };
 
   const mascotLines = {
@@ -76,6 +126,7 @@
     hint: "提示已经填好啦，继续保持节奏。",
     fail: "这局失败了，换个种子重新来过。",
     win: "通关成功，今天的推理也很漂亮。",
+    battle: "自动破阵启动，我会随机填数；你负责升级时选技能。",
   };
 
   init();
@@ -86,7 +137,6 @@
     bindActions();
     renderRecords();
     startGame();
-    showFirstVisitGuide();
   }
 
   function buildBoard() {
@@ -125,9 +175,15 @@
   }
 
   function bindActions() {
+    els.classicModeBtn?.addEventListener("click", () => startGame());
+    els.battleModeBtn?.addEventListener("click", () => startBattle());
     els.newGameBtn.addEventListener("click", () => {
       interruptCurrentGame();
-      startGame();
+      if (state.mode === "battle") {
+        startBattle();
+      } else {
+        startGame();
+      }
     });
     els.againBtn.addEventListener("click", () => startGame());
     els.confirmBtn.addEventListener("click", confirmSelected);
@@ -150,40 +206,16 @@
       saveJson(STORAGE_RECORDS, state.records);
       renderRecords();
     });
-    els.guideModalClose?.addEventListener("click", closeGuideModal);
-    els.guideModalDone?.addEventListener("click", closeGuideModal);
-    els.guideModal?.addEventListener("click", (event) => {
-      if (event.target === els.guideModal) {
-        closeGuideModal();
-      }
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && els.guideModal && !els.guideModal.classList.contains("hidden")) {
-        closeGuideModal();
-      }
-    });
     document.addEventListener("visibilitychange", handleForegroundChange);
     window.addEventListener("blur", handleForegroundChange);
     window.addEventListener("focus", handleForegroundChange);
   }
 
-  function showFirstVisitGuide() {
-    if (!els.guideModal || localStorage.getItem(STORAGE_GUIDE_SEEN) === "1") {
-      return;
-    }
-    els.guideModal.classList.remove("hidden");
-    els.guideModalDone?.focus();
-  }
-
-  function closeGuideModal() {
-    if (!els.guideModal) {
-      return;
-    }
-    els.guideModal.classList.add("hidden");
-    localStorage.setItem(STORAGE_GUIDE_SEEN, "1");
-  }
-
   function startGame(requestedSeed) {
+    stopBattleTimer();
+    state.battle.choosingSkill = false;
+    els.skillModal?.classList.add("hidden");
+    state.mode = "classic";
     state.difficulty = els.difficulty.value;
     state.seed = requestedSeed || createSeed(state.difficulty);
     state.selected = null;
@@ -207,6 +239,49 @@
     state.statuses = game.puzzle.map((value) => (value ? "given" : "empty"));
     restartTimer();
     render();
+  }
+
+  function startBattle() {
+    window.clearInterval(state.timerId);
+    state.mode = "battle";
+    state.difficulty = els.difficulty.value;
+    state.seed = createSeed("battle");
+    resetBattleState();
+    const game = createSeededGame(state.seed, state.difficulty);
+    state.puzzle = game.puzzle.slice();
+    state.solution = game.solution.slice();
+    state.values = game.puzzle.slice();
+    state.statuses = game.puzzle.map((value) => (value ? "given" : "empty"));
+    collectInitialBattleCompletions();
+    state.selected = null;
+    state.highlightedValue = 0;
+    state.ended = false;
+    state.undoStack = [];
+    state.redoStack = [];
+    state.resetSnapshot = null;
+    els.againBtn.classList.add("hidden");
+    els.seedInput.value = state.seed;
+    setMascot("battle");
+    showToast("自动破阵开始");
+    render();
+    resumeBattleTimer();
+  }
+
+  function resetBattleState() {
+    stopBattleTimer();
+    state.battle.score = 0;
+    state.battle.level = 1;
+    state.battle.nextLevelScore = 5;
+    state.battle.interval = 2000;
+    state.battle.paused = false;
+    state.battle.choosingSkill = false;
+    state.battle.rng = mulberry32(hashString(`battle-${Date.now()}-${Math.random()}`));
+    state.battle.skills = { speed: 0, chain: 0, power: 0 };
+    state.battle.selectedSkills = [];
+    state.battle.completedRows = new Set();
+    state.battle.completedCols = new Set();
+    state.battle.completedBoxes = new Set();
+    els.skillModal?.classList.add("hidden");
   }
 
   function createSeededGame(seed, difficulty) {
@@ -247,6 +322,9 @@
   }
 
   function handleCellClick(event) {
+    if (state.mode === "battle") {
+      return;
+    }
     if (state.longPressTriggered) {
       state.longPressTriggered = false;
       return;
@@ -256,6 +334,9 @@
   }
 
   function handleCellMouseDown(event) {
+    if (state.mode === "battle") {
+      return;
+    }
     const index = Number(event.currentTarget.dataset.index);
     selectCell(index);
     if (event.button === 2) {
@@ -281,6 +362,9 @@
 
   function handleCellWheel(event) {
     event.preventDefault();
+    if (state.mode === "battle") {
+      return;
+    }
     const index = Number(event.currentTarget.dataset.index);
     selectCell(index);
     changeCell(index, event.deltaY < 0 ? 1 : -1);
@@ -520,6 +604,190 @@
     }
   }
 
+  function resumeBattleTimer() {
+    stopBattleTimer();
+    if (state.mode !== "battle" || state.battle.choosingSkill || shouldPauseTimer()) {
+      state.battle.paused = true;
+      return;
+    }
+    state.battle.paused = false;
+    state.battle.timerId = window.setInterval(() => {
+      autoFillBattleCell(true);
+    }, state.battle.interval);
+  }
+
+  function stopBattleTimer() {
+    window.clearInterval(state.battle?.timerId);
+    if (state.battle) {
+      state.battle.timerId = null;
+    }
+  }
+
+  function pauseBattleTimer() {
+    if (state.mode !== "battle") {
+      return;
+    }
+    state.battle.paused = true;
+    stopBattleTimer();
+  }
+
+  function autoFillBattleCell(allowLevelUp) {
+    if (state.mode !== "battle" || state.battle.choosingSkill || shouldPauseTimer()) {
+      pauseBattleTimer();
+      return;
+    }
+    const emptyIndexes = getBattleEmptyIndexes();
+    if (emptyIndexes.length === 0) {
+      resetBattleRound();
+      return;
+    }
+    const index = emptyIndexes[Math.floor(state.battle.rng() * emptyIndexes.length)];
+    state.values[index] = state.solution[index];
+    state.statuses[index] = "auto";
+    state.selected = index;
+    state.highlightedValue = state.values[index];
+    const gained = collectBattleScore(index);
+    render();
+    animateCell(index, gained > 0 ? "spark" : "bump");
+    if (allowLevelUp) {
+      checkBattleLevelUp();
+    }
+  }
+
+  function getBattleEmptyIndexes() {
+    return state.values
+      .map((value, index) => (!value && state.statuses[index] === "empty" ? index : null))
+      .filter((index) => index !== null);
+  }
+
+  function collectBattleScore(index) {
+    const row = Math.floor(index / 9);
+    const col = index % 9;
+    const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+    let gained = 0;
+    if (!state.battle.completedRows.has(row) && isBattleRowComplete(row)) {
+      state.battle.completedRows.add(row);
+      gained += 1 + state.battle.skills.power;
+      for (let count = 0; count < state.battle.skills.chain; count += 1) {
+        autoFillBattleCell(false);
+      }
+    }
+    if (!state.battle.completedCols.has(col) && isBattleColComplete(col)) {
+      state.battle.completedCols.add(col);
+      gained += 1 + state.battle.skills.power;
+    }
+    if (!state.battle.completedBoxes.has(box) && isBattleBoxComplete(box)) {
+      state.battle.completedBoxes.add(box);
+      gained += 2 + state.battle.skills.power;
+    }
+    if (gained > 0) {
+      state.battle.score += gained;
+      showToast(`+${gained}`);
+    }
+    return gained;
+  }
+
+  function isBattleRowComplete(row) {
+    return state.values.slice(row * 9, row * 9 + 9).every(Boolean);
+  }
+
+  function isBattleColComplete(col) {
+    for (let row = 0; row < 9; row += 1) {
+      if (!state.values[row * 9 + col]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function isBattleBoxComplete(box) {
+    const rowStart = Math.floor(box / 3) * 3;
+    const colStart = (box % 3) * 3;
+    for (let row = rowStart; row < rowStart + 3; row += 1) {
+      for (let col = colStart; col < colStart + 3; col += 1) {
+        if (!state.values[row * 9 + col]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function resetBattleRound() {
+    const game = createSeededGame(createSeed("battle"), state.difficulty);
+    state.puzzle = game.puzzle.slice();
+    state.solution = game.solution.slice();
+    state.values = game.puzzle.slice();
+    state.statuses = game.puzzle.map((value) => (value ? "given" : "empty"));
+    collectInitialBattleCompletions();
+    state.selected = null;
+    state.highlightedValue = 0;
+    state.battle.completedRows = new Set();
+    state.battle.completedCols = new Set();
+    state.battle.completedBoxes = new Set();
+    showToast("新一轮");
+    render();
+  }
+
+  function checkBattleLevelUp() {
+    if (state.battle.score < state.battle.nextLevelScore || state.battle.choosingSkill) {
+      return;
+    }
+    state.battle.choosingSkill = true;
+    pauseBattleTimer();
+    showSkillChoices();
+  }
+
+  function showSkillChoices() {
+    els.skillChoices.innerHTML = "";
+    shuffle(battleSkillPool, state.battle.rng).forEach((skill) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "skill-card";
+      button.innerHTML = `<strong>${skill.name}</strong><span>${skill.description}</span>`;
+      button.addEventListener("click", () => chooseBattleSkill(skill));
+      els.skillChoices.appendChild(button);
+    });
+    els.skillModal.classList.remove("hidden");
+  }
+
+  function chooseBattleSkill(skill) {
+    if (skill.id === "speed") {
+      state.battle.skills.speed += 1;
+      state.battle.interval = Math.max(500, state.battle.interval - 300);
+    }
+    if (skill.id === "chain") {
+      state.battle.skills.chain += 1;
+    }
+    if (skill.id === "power") {
+      state.battle.skills.power += 1;
+    }
+    state.battle.selectedSkills.push(skill.name);
+    state.battle.level += 1;
+    state.battle.nextLevelScore += 5;
+    state.battle.choosingSkill = false;
+    els.skillModal.classList.add("hidden");
+    renderBattleDashboard();
+    resumeBattleTimer();
+  }
+
+  function collectInitialBattleCompletions() {
+    state.battle.completedRows = new Set();
+    state.battle.completedCols = new Set();
+    state.battle.completedBoxes = new Set();
+    for (let index = 0; index < 9; index += 1) {
+      if (isBattleRowComplete(index)) {
+        state.battle.completedRows.add(index);
+      }
+      if (isBattleColComplete(index)) {
+        state.battle.completedCols.add(index);
+      }
+      if (isBattleBoxComplete(index)) {
+        state.battle.completedBoxes.add(index);
+      }
+    }
+  }
+
   function interruptCurrentGame() {
     if (state.ended || !state.seed || state.solution.length === 0) {
       return;
@@ -572,9 +840,27 @@
     });
     els.mistakes.textContent = `错误 ${state.mistakes}/3`;
     els.hints.textContent = `提示 ${state.hints}`;
-    els.hintBtn.disabled = state.hints <= 0 || state.ended;
-    els.confirmBtn.disabled = state.ended;
-    els.completeBtn.disabled = state.ended;
+    const isBattle = state.mode === "battle";
+    if (isBattle) {
+      els.timer.textContent = "自动";
+      els.mistakes.textContent = `等级 ${state.battle.level}`;
+      els.hints.textContent = `分数 ${state.battle.score}`;
+    }
+    document.body.classList.toggle("battle-mode", isBattle);
+    els.classicModeBtn?.classList.toggle("active", !isBattle);
+    els.battleModeBtn?.classList.toggle("active", isBattle);
+    els.battleDashboard?.classList.toggle("hidden", !isBattle);
+    els.numberProgress?.closest(".number-progress")?.classList.toggle("hidden", isBattle);
+    els.confirmBtn.classList.toggle("hidden", isBattle);
+    els.hintBtn.classList.toggle("hidden", isBattle);
+    els.completeBtn.classList.toggle("hidden", isBattle);
+    els.seedRow?.classList.toggle("hidden", isBattle);
+    els.loadSeedBtn.disabled = isBattle;
+    els.difficulty.disabled = false;
+    els.newGameBtn.textContent = isBattle ? "新一轮破阵" : "新题目";
+    els.hintBtn.disabled = isBattle || state.hints <= 0 || state.ended;
+    els.confirmBtn.disabled = isBattle || state.ended;
+    els.completeBtn.disabled = isBattle || state.ended;
     if (els.undoBtn) {
       els.undoBtn.disabled = state.undoStack.length === 0 || state.ended;
     }
@@ -585,6 +871,46 @@
       els.undoResetBtn.disabled = !state.resetSnapshot || state.ended;
     }
     renderNumberProgress();
+    renderBattleDashboard();
+    renderGuide(isBattle ? "battle" : "classic");
+  }
+
+  function renderBattleDashboard() {
+    if (!els.battleDashboard) {
+      return;
+    }
+    els.battleScore.textContent = String(state.battle.score);
+    els.battleLevel.textContent = String(state.battle.level);
+    els.battleInterval.textContent = `${(state.battle.interval / 1000).toFixed(1)}s`;
+    els.battleSkills.innerHTML = "";
+    if (state.battle.selectedSkills.length === 0) {
+      const item = document.createElement("li");
+      item.textContent = "暂未选择";
+      els.battleSkills.appendChild(item);
+      return;
+    }
+    state.battle.selectedSkills.forEach((name) => {
+      const item = document.createElement("li");
+      item.textContent = name;
+      els.battleSkills.appendChild(item);
+    });
+  }
+
+  function renderGuide(mode) {
+    if (!els.guidePanel) {
+      return;
+    }
+    els.guideTitle.textContent = mode === "battle" ? "破阵说明" : "操作说明";
+    els.guidePanel.innerHTML = "";
+    guideCopy[mode].forEach(([title, text]) => {
+      const item = document.createElement("li");
+      const strong = document.createElement("strong");
+      const span = document.createElement("span");
+      strong.textContent = title;
+      span.textContent = text;
+      item.append(strong, span);
+      els.guidePanel.appendChild(item);
+    });
   }
 
   function renderNumberProgress() {
@@ -676,8 +1002,12 @@
   function handleForegroundChange() {
     if (shouldPauseTimer()) {
       pauseTimer();
+      pauseBattleTimer();
     } else {
       resumeTimer();
+      if (state.mode === "battle" && !state.battle.choosingSkill) {
+        resumeBattleTimer();
+      }
     }
   }
 
@@ -692,7 +1022,7 @@
   }
 
   function canEdit(index) {
-    return !state.ended && state.statuses[index] !== "given" && state.statuses[index] !== "confirmed" && state.statuses[index] !== "hinted";
+    return state.mode === "classic" && !state.ended && state.statuses[index] !== "given" && state.statuses[index] !== "confirmed" && state.statuses[index] !== "hinted";
   }
 
   function cycleValue(value) {
