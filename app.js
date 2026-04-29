@@ -19,9 +19,6 @@
   const els = {
     board: document.getElementById("board"),
     numberProgress: document.getElementById("numberProgress"),
-    touchNumbers: document.getElementById("touchNumbers"),
-    touchClearBtn: document.getElementById("touchClearBtn"),
-    touchConfirmBtn: document.getElementById("touchConfirmBtn"),
     timer: document.getElementById("timer"),
     mistakes: document.getElementById("mistakes"),
     hints: document.getElementById("hints"),
@@ -85,7 +82,6 @@
   function init() {
     buildBoard();
     buildNumberProgress();
-    buildTouchNumbers();
     bindActions();
     renderRecords();
     startGame();
@@ -127,19 +123,6 @@
     }
   }
 
-  function buildTouchNumbers() {
-    els.touchNumbers.innerHTML = "";
-    for (let value = 1; value <= 9; value += 1) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "touch-number";
-      button.dataset.value = String(value);
-      button.textContent = String(value);
-      button.addEventListener("click", () => setSelectedNumber(value));
-      els.touchNumbers.appendChild(button);
-    }
-  }
-
   function bindActions() {
     els.newGameBtn.addEventListener("click", () => {
       interruptCurrentGame();
@@ -147,8 +130,6 @@
     });
     els.againBtn.addEventListener("click", () => startGame());
     els.confirmBtn.addEventListener("click", confirmSelected);
-    els.touchConfirmBtn.addEventListener("click", confirmSelected);
-    els.touchClearBtn.addEventListener("click", clearSelected);
     els.hintBtn.addEventListener("click", useHint);
     els.completeBtn.addEventListener("click", completeGame);
     els.undoBtn?.addEventListener("click", undo);
@@ -337,14 +318,6 @@
     setCellValue(index, next);
   }
 
-  function setSelectedNumber(value) {
-    if (state.selected === null) {
-      showToast("请先选择一个格子");
-      return;
-    }
-    setCellValue(state.selected, value);
-  }
-
   function setCellValue(index, value) {
     if (!canEdit(index)) {
       return;
@@ -371,14 +344,6 @@
     state.redoStack = [];
     showToast("已清除");
     render();
-  }
-
-  function clearSelected() {
-    if (state.selected === null) {
-      showToast("请先选择一个格子");
-      return;
-    }
-    clearCell(state.selected);
   }
 
   function confirmSelected() {
@@ -619,13 +584,7 @@
     els.hints.textContent = `提示 ${state.hints}`;
     els.hintBtn.disabled = state.hints <= 0 || state.ended;
     els.confirmBtn.disabled = state.ended;
-    els.touchConfirmBtn.disabled = state.ended;
-    els.touchClearBtn.disabled = state.ended;
     els.completeBtn.disabled = state.ended;
-    [...els.touchNumbers.children].forEach((button) => {
-      button.disabled = state.ended;
-      button.classList.toggle("active", Number(button.dataset.value) === state.highlightedValue);
-    });
     if (els.undoBtn) {
       els.undoBtn.disabled = state.undoStack.length === 0 || state.ended;
     }

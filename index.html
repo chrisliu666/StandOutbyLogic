@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>独数一帜 | Stand Out by Logic</title>
-    <link rel="stylesheet" href="styles.css?v=20260430-4" />
+    <link rel="stylesheet" href="styles.css?v=20260430-5" />
   </head>
   <body>
     <main class="app-shell">
@@ -43,7 +43,6 @@
             <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
             <li><strong>确认</strong><span>正确则固定，错误扣 1 次机会</span></li>
             <li><strong>提示</strong><span>每局 3 次，直接填入正确数字</span></li>
-            <li><strong>手机</strong><span>点格子后，用数字输入区填数、清除和确认</span></li>
           </ul>
         </section>
 
@@ -60,15 +59,6 @@
         <section class="number-progress" aria-label="数字完成状态">
           <p class="panel-title">数字状态</p>
           <div id="numberProgress" class="number-progress-grid"></div>
-        </section>
-
-        <section class="touch-input" aria-label="触屏数字输入">
-          <p class="panel-title">数字输入</p>
-          <div id="touchNumbers" class="touch-number-grid"></div>
-          <div class="touch-tools">
-            <button id="touchClearBtn" type="button">清除</button>
-            <button id="touchConfirmBtn" type="button">确认</button>
-          </div>
         </section>
 
         <div class="seed-row">
@@ -106,7 +96,6 @@
           <li><strong>长按左键</strong><span>清除当前格子的临时数字</span></li>
           <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
           <li><strong>确认 / 提示</strong><span>用右侧按钮校验或直接填入答案</span></li>
-          <li><strong>手机</strong><span>点格子后，用数字输入区填数、清除和确认</span></li>
         </ul>
         <button id="guideModalDone" class="guide-modal-done" type="button">我知道了</button>
       </div>
@@ -135,6 +124,6 @@
         }
       })();
     </script>
-    <script src="app.js?v=20260430-4"></script>
+    <script src="app.js?v=20260430-5"></script>
   </body>
 </html>
