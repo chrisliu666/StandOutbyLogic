@@ -484,6 +484,92 @@ h1 {
   transform: translate(-50%, -50%) scale(1.08);
 }
 
+.guide-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(45, 36, 26, 0.34);
+  backdrop-filter: blur(3px);
+  z-index: 30;
+}
+
+.guide-modal.hidden {
+  display: none;
+}
+
+.guide-modal-card {
+  position: relative;
+  width: min(430px, 100%);
+  padding: 24px;
+  border: 1px solid rgba(143, 115, 80, 0.28);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(255, 250, 241, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.guide-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.guide-modal-kicker {
+  margin: 0 44px 4px 0;
+  color: var(--jade);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.guide-modal h2 {
+  margin: 0 44px 14px 0;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.guide-modal ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-modal li {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 246, 214, 0.62);
+  line-height: 1.4;
+}
+
+.guide-modal li strong {
+  color: #7b4b61;
+}
+
+.guide-modal li span {
+  color: var(--muted);
+}
+
+.guide-modal-done {
+  width: 100%;
+  margin-top: 16px;
+  font-weight: 700;
+}
+
 @keyframes bump {
   0%,
   100% {

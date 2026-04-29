@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_RECORDS = "stand-out-by-logic.records";
+  const STORAGE_GUIDE_SEEN = "stand-out-by-logic.guide-seen";
 
   const difficultyBlanks = {
     easy: 36,
@@ -38,6 +39,9 @@
     clearRecordsBtn: document.getElementById("clearRecordsBtn"),
     recordsList: document.getElementById("recordsList"),
     mascotLine: document.getElementById("mascotLine"),
+    guideModal: document.getElementById("guideModal"),
+    guideModalClose: document.getElementById("guideModalClose"),
+    guideModalDone: document.getElementById("guideModalDone"),
     toast: document.getElementById("toast"),
   };
 
@@ -82,6 +86,7 @@
     bindActions();
     renderRecords();
     startGame();
+    showFirstVisitGuide();
   }
 
   function buildBoard() {
@@ -145,9 +150,37 @@
       saveJson(STORAGE_RECORDS, state.records);
       renderRecords();
     });
+    els.guideModalClose?.addEventListener("click", closeGuideModal);
+    els.guideModalDone?.addEventListener("click", closeGuideModal);
+    els.guideModal?.addEventListener("click", (event) => {
+      if (event.target === els.guideModal) {
+        closeGuideModal();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && els.guideModal && !els.guideModal.classList.contains("hidden")) {
+        closeGuideModal();
+      }
+    });
     document.addEventListener("visibilitychange", handleForegroundChange);
     window.addEventListener("blur", handleForegroundChange);
     window.addEventListener("focus", handleForegroundChange);
+  }
+
+  function showFirstVisitGuide() {
+    if (!els.guideModal || localStorage.getItem(STORAGE_GUIDE_SEEN) === "1") {
+      return;
+    }
+    els.guideModal.classList.remove("hidden");
+    els.guideModalDone?.focus();
+  }
+
+  function closeGuideModal() {
+    if (!els.guideModal) {
+      return;
+    }
+    els.guideModal.classList.add("hidden");
+    localStorage.setItem(STORAGE_GUIDE_SEEN, "1");
   }
 
   function startGame(requestedSeed) {

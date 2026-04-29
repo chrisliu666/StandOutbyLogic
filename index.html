@@ -85,6 +85,22 @@
       </aside>
     </main>
 
+    <div id="guideModal" class="guide-modal hidden" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
+      <div class="guide-modal-card">
+        <button id="guideModalClose" class="guide-modal-close" type="button" aria-label="关闭操作指导">×</button>
+        <p class="guide-modal-kicker">Ada 的快速提醒</p>
+        <h2 id="guideModalTitle">鼠标这样玩</h2>
+        <ul>
+          <li><strong>左键单击</strong><span>选中格子，并高亮相同数字</span></li>
+          <li><strong>滚轮</strong><span>上滚 +1，下滚 -1，数字会循环切换</span></li>
+          <li><strong>长按左键</strong><span>清除当前格子的临时数字</span></li>
+          <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
+          <li><strong>确认 / 提示</strong><span>用右侧按钮校验或直接填入答案</span></li>
+        </ul>
+        <button id="guideModalDone" class="guide-modal-done" type="button">我知道了</button>
+      </div>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>
   </body>
