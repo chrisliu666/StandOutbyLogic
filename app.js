@@ -172,7 +172,6 @@
     }
     localStorage.removeItem("stand-out-by-logic.guide-seen");
     localStorage.removeItem("stand-out-by-logic.guide-seen.v2");
-    els.guideModal.classList.remove("hidden");
     els.guideModalDone?.focus();
   }
 
