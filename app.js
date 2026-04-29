@@ -2,8 +2,6 @@
   "use strict";
 
   const STORAGE_RECORDS = "stand-out-by-logic.records";
-  const STORAGE_GUIDE_SEEN = "stand-out-by-logic.guide-seen.v2";
-
   const difficultyBlanks = {
     easy: 36,
     medium: 44,
@@ -67,6 +65,7 @@
     records: loadJson(STORAGE_RECORDS, []),
     longPressTimer: null,
     longPressTriggered: false,
+    guideClosed: false,
   };
 
   const mascotLines = {
@@ -168,10 +167,11 @@
   }
 
   function showFirstVisitGuide() {
-    if (!els.guideModal || localStorage.getItem(STORAGE_GUIDE_SEEN) === "1") {
+    if (!els.guideModal || state.guideClosed) {
       return;
     }
     localStorage.removeItem("stand-out-by-logic.guide-seen");
+    localStorage.removeItem("stand-out-by-logic.guide-seen.v2");
     els.guideModal.classList.remove("hidden");
     els.guideModalDone?.focus();
   }
@@ -181,7 +181,7 @@
       return;
     }
     els.guideModal.classList.add("hidden");
-    localStorage.setItem(STORAGE_GUIDE_SEEN, "1");
+    state.guideClosed = true;
   }
 
   function startGame(requestedSeed) {
