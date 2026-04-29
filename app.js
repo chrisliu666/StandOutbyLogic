@@ -172,6 +172,8 @@
     }
     localStorage.removeItem("stand-out-by-logic.guide-seen");
     localStorage.removeItem("stand-out-by-logic.guide-seen.v2");
+    els.guideModal.classList.remove("hidden");
+    els.guideModal.removeAttribute("aria-hidden");
     els.guideModalDone?.focus();
   }
 
@@ -607,7 +609,7 @@
       const value = Number(item.dataset.value);
       const count = counts[value];
       item.querySelector("span").textContent = `${count}/9`;
-      item.classList.toggle("almost", count === 8);
+      item.classList.toggle("almost", count >= 8 && count < 9);
       item.classList.toggle("filled", count >= 9);
     });
   }
