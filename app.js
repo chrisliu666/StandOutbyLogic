@@ -611,6 +611,13 @@
       item.querySelector("span").textContent = `${count}/9`;
       item.classList.toggle("almost", count >= 8 && count < 9);
       item.classList.toggle("filled", count >= 9);
+      if (count >= 9) {
+        item.title = `${value} 已填满`;
+      } else if (count >= 8) {
+        item.title = `${value} 还差 1 个`;
+      } else {
+        item.title = `${value} 已固定 ${count} 个`;
+      }
     });
   }
 

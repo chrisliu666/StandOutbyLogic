@@ -300,8 +300,22 @@ h1 {
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
 }
 
+.number-progress-item.almost {
+  color: #7b2347;
+  background: linear-gradient(180deg, #ffe1ea, #ffd0df);
+  border-color: rgba(217, 111, 145, 0.86);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.62),
+    0 0 0 2px rgba(217, 111, 145, 0.18);
+}
+
 .number-progress-item.filled span {
   color: #7b5a1d;
+}
+
+.number-progress-item.almost span {
+  color: #8f3158;
+  font-weight: 700;
 }
 
 .control-panel {
