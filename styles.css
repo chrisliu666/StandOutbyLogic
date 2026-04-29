@@ -137,6 +137,7 @@ h1 {
   border: 3px solid var(--line-strong);
   background: var(--line-strong);
   user-select: none;
+  touch-action: manipulation;
 }
 
 .cell {
@@ -245,6 +246,46 @@ h1 {
   padding: 10px 12px;
 }
 
+.touch-input {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(143, 115, 80, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.74);
+}
+
+.touch-input .panel-title {
+  margin-bottom: 7px;
+}
+
+.touch-number-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 5px;
+}
+
+.touch-number,
+.touch-tools button {
+  min-height: 38px;
+  font-family: var(--digit-font);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.touch-number.active {
+  color: #7b2347;
+  border-color: rgba(217, 111, 145, 0.8);
+  background: #ffe1ea;
+}
+
+.touch-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .seed-row input,
 .settings select {
   min-height: 38px;
@@ -332,7 +373,7 @@ h1 {
 .control-panel {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto auto auto auto minmax(0, 1fr);
   gap: 12px;
   padding: 16px;
   height: 820px;
@@ -343,6 +384,7 @@ h1 {
 .mascot-panel,
 .guide-panel,
 .number-progress,
+.touch-input,
 .records {
   grid-column: auto;
 }
@@ -350,6 +392,7 @@ h1 {
 .mascot-panel,
 .guide-panel,
 .settings,
+.touch-input,
 .seed-row,
 .records {
   border: 1px solid rgba(143, 115, 80, 0.22);
