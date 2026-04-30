@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>独数一帜 | Stand Out by Logic</title>
+    <link rel="stylesheet" href="styles.css?v=20260430-5" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="game-area" aria-label="数独游戏区">
+        <header class="brand">
+          <div>
+            <p class="eyebrow">Stand Out by Logic——BY LIUXUANBO</p>
+            <h1>独数一帜</h1>
+          </div>
+          <div class="status-strip" aria-live="polite">
+            <span id="timer">00:00</span>
+            <span id="mistakes">错误 0/3</span>
+            <span id="hints">提示 3</span>
+          </div>
+        </header>
+
+        <div id="board" class="sudoku-board" aria-label="数独棋盘"></div>
+
+      </section>
+
+      <aside class="control-panel" aria-label="游戏控制">
+        <section class="mascot-panel">
+          <img class="mascot-image" src="./assets/mascot-reference.svg" alt="Ada" />
+          <div>
+            <p class="panel-title">Ada</p>
+            <p id="mascotLine">选一个格子，我会帮你盯住同样的数字。</p>
+          </div>
+        </section>
+
+        <section class="guide-panel" aria-label="操作说明">
+          <p class="panel-title">操作说明</p>
+          <ul>
+            <li><strong>左键单击</strong><span>选中格子，并高亮所有相同数字</span></li>
+            <li><strong>滚轮</strong><span>上滚 +1，下滚 -1</span></li>
+            <li><strong>长按</strong><span>清除当前格</span></li>
+            <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
+            <li><strong>确认</strong><span>正确则固定，错误扣 1 次机会</span></li>
+            <li><strong>提示</strong><span>每局 3 次，直接填入正确数字</span></li>
+          </ul>
+        </section>
+
+        <section class="settings">
+          <label for="difficulty">难度</label>
+          <select id="difficulty">
+            <option value="easy">简单</option>
+            <option value="medium" selected>普通</option>
+            <option value="hard">困难</option>
+            <option value="expert">专家</option>
+          </select>
+        </section>
+
+        <section class="number-progress" aria-label="数字完成状态">
+          <p class="panel-title">数字状态</p>
+          <div id="numberProgress" class="number-progress-grid"></div>
+        </section>
+
+        <div class="seed-row">
+          <label for="seedInput">种子码</label>
+          <input id="seedInput" type="text" autocomplete="off" spellcheck="false" />
+          <button id="loadSeedBtn" type="button">载入</button>
+        </div>
+
+        <section class="actions" aria-label="操作按钮">
+          <button id="newGameBtn" type="button">新题目</button>
+          <button id="confirmBtn" type="button">确认</button>
+          <button id="hintBtn" type="button">提示</button>
+          <button id="completeBtn" type="button">一键完成</button>
+          <button id="againBtn" class="hidden" type="button">再来一局</button>
+        </section>
+
+        <section class="records">
+          <div class="records-head">
+            <p class="panel-title">对局记录</p>
+            <button id="clearRecordsBtn" type="button">清空</button>
+          </div>
+          <ol id="recordsList"></ol>
+        </section>
+      </aside>
+    </main>
+
+    <div id="guideModal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
+      <div class="guide-modal-card">
+        <button id="guideModalClose" class="guide-modal-close" type="button" aria-label="关闭操作指导">×</button>
+        <p class="guide-modal-kicker">Ada 的快速提醒</p>
+        <h2 id="guideModalTitle">鼠标这样玩</h2>
+        <ul>
+          <li><strong>左键单击</strong><span>选中格子，并高亮相同数字</span></li>
+          <li><strong>滚轮</strong><span>上滚 +1，下滚 -1，数字会循环切换</span></li>
+          <li><strong>长按左键</strong><span>清除当前格子的临时数字</span></li>
+          <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
+          <li><strong>确认 / 提示</strong><span>用右侧按钮校验或直接填入答案</span></li>
+        </ul>
+        <button id="guideModalDone" class="guide-modal-done" type="button">我知道了</button>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script>
+      (function () {
+        var modal = document.getElementById("guideModal");
+        var close = document.getElementById("guideModalClose");
+        var done = document.getElementById("guideModalDone");
+        function closeGuide() {
+          if (modal) {
+            modal.classList.add("hidden");
+          }
+        }
+        if (modal) {
+          modal.classList.remove("hidden");
+          modal.removeAttribute("aria-hidden");
+          if (close) {
+            close.addEventListener("click", closeGuide);
+          }
+          if (done) {
+            done.addEventListener("click", closeGuide);
+          }
+        }
+      })();
+    </script>
+    <script src="app.js?v=20260430-6"></script>
+  </body>
+</html>
