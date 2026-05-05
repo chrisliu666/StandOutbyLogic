@@ -3,11 +3,10 @@
 这是一个浏览器端数独网页小游戏项目。
 
 英文名：`Stand Out by Logic`
-网页展示署名：`Stand Out by Logic——BY LIUXUANBO`
-
+访问地址：https://chrisliu666.github.io/StandOutbyLogic/
 ## 当前状态
 
-项目目前已经完成第一版静态网页实现，可通过本地 HTTP 服务运行。
+项目目前已经完成第一版静态网页实现
 
 ## 当前实现文件
 
@@ -16,13 +15,9 @@
 - `app.js`：数独题目加载、种子码、鼠标交互、确认、提示、失败、记录等核心逻辑。
 - `assets/mascot-reference.svg`：基于用户提供图片风格制作的 Ada 头像资源。
 - `dev-server.js`：本地静态开发服务器，默认端口 `5188`。
-- `start-dev-server.cmd`：Windows 启动脚本，支持可选端口参数。
-- `start-public-server.cmd`：Windows 公网/局域网转发启动脚本，监听 `0.0.0.0`，用于配合端口映射或隧道服务。
-- `start-public-server.ps1`：PowerShell 公网/局域网转发启动脚本。
 - `start-share-server.cmd`：分享给朋友时使用的启动脚本，默认端口 `5189`。
 - `stop-share-server.cmd`：分享服务关闭脚本，默认关闭 `5189`。
-- `stop-dev-server.cmd`：Windows 关闭脚本，按端口结束本地服务。
-- `start-dev-server.ps1`：PowerShell 启动脚本。
+
 
 ## 产品目标
 
@@ -164,13 +159,6 @@
 - 用户手动输入种子码时，使用同一套本地确定性数独生成逻辑生成同一局，保证种子码可复现。
 - 当前难度通过挖空数量控制：简单、普通、困难、专家。
 
-## 桌面单机版
-
-- 已规划复制出独立桌面版项目，保留网页版一致的 HTML、CSS、JavaScript UI。
-- 桌面版采用本地 exe 启动器运行，不使用外部 API。
-- exe 启动器负责在本机启动静态页面服务并打开同一套游戏界面。
-- 桌面版启动器源码位于 `desktop/`，使用 Windows 自带 .NET Framework C# 编译器构建。
-- 桌面版发布命令：`powershell -ExecutionPolicy Bypass -File desktop/build-exe.ps1`。
 
 ## 玩法行为
 
@@ -261,148 +249,3 @@
 - 确定项目中文名为“独数一帜”，英文名为 `Stand Out by Logic`。
 - 将当前生效交互规则修正为：鼠标双击格子时填入 `1`，不是 `0`。
 - 保留英文初版作为历史原文；如历史原文与中文当前规则冲突，以中文当前规则为准。
-
-## 开发
-
-当前是无需构建工具的静态网页项目。
-
-推荐本地运行命令：
-
-```bash
-node dev-server.js 5188
-```
-
-Windows 可双击运行：
-
-```text
-start-dev-server.cmd
-```
-
-也可以指定端口：
-
-```text
-start-dev-server.cmd 5188
-```
-
-如需让朋友通过公网网址访问，有两种方式：
-
-1. 推荐长期分享：将本项目作为静态网站部署到 GitHub Pages、Vercel、Netlify、Cloudflare Pages 等平台，上传 `index.html`、`styles.css`、`app.js`、`assets/` 等静态文件即可，游戏不依赖任何外部 API。
-2. 临时分享本机运行：运行 `start-public-server.cmd 5188`，让服务监听 `0.0.0.0`，再配合路由器端口映射、云服务器反向代理或内网穿透工具生成公网网址。
-
-公网/局域网转发启动：
-
-```text
-start-public-server.cmd 5188
-```
-
-等价命令：
-
-```bash
-node dev-server.js 5188 0.0.0.0
-```
-
-当前这台电脑的局域网访问地址是：
-
-```text
-http://192.168.10.107:5189/
-```
-
-分享给同一 Wi-Fi / 同一局域网的朋友时，双击运行：
-
-```text
-start-share-server.cmd
-```
-
-关闭分享服务：
-
-```text
-stop-share-server.cmd
-```
-
-关闭服务：
-
-```text
-stop-dev-server.cmd
-```
-
-关闭指定端口服务：
-
-```text
-stop-dev-server.cmd 5188
-```
-
-然后访问：
-
-```text
-http://127.0.0.1:5188/
-```
-
-当前检查命令：
-
-```bash
-node --check app.js
-```
-
-桌面版发布命令：
-
-```bash
-powershell -ExecutionPolicy Bypass -File desktop/build-exe.ps1
-```
-
-## 历史原文：英文初版
-
-# Sudoku Web Game
-
-This repository is for a browser-based Sudoku mini game.
-
-## Status
-
-The project is currently in the requirements and documentation stage.
-
-## Product Goal
-
-Build a lightweight Sudoku web game with a fresh classical visual style and highly polished mouse interactions.
-
-The puzzle library should be sourced from publicly available online Sudoku puzzle data or generated from an online-compatible dataset format. When implementation begins, document the selected source, license, and update method.
-
-## UI Direction
-
-- Fresh and classical style.
-- Calm, readable board layout.
-- Clear 9x9 grid with stronger visual separation for each 3x3 box.
-- Avoid clutter around the board so the interaction remains the focus.
-- Use tasteful colors, subtle borders, and refined typography.
-
-## Core Interaction
-
-Each Sudoku cell supports mouse-first input:
-
-- Double-click: set the selected cell value to `0`.
-- Left-click: increase the cell value by `1`.
-- Right-click: decrease the cell value by `1`.
-- Mouse wheel up: increase the cell value by `1`.
-- Mouse wheel down: decrease the cell value by `1`.
-- Long press: clear the cell.
-- Single click on a cell: highlight all cells with the same number.
-
-Value changes should stay within the supported Sudoku range. The intended cycle is `0` through `9`, where `0` represents an empty cell.
-
-## Expected Gameplay Behavior
-
-- Given puzzle clues should be visually distinct from player-entered values.
-- Given puzzle clues should not be accidentally editable unless an explicit edit mode is introduced.
-- Highlighting should update immediately when the focused or clicked number changes.
-- Empty cells with value `0` should be displayed as blank in the board UI unless a debug mode is added.
-- Right-click interaction should prevent the browser context menu on board cells.
-- Wheel interaction should prevent accidental page scrolling while the pointer is over the board.
-
-## Development
-
-No development commands are defined yet.
-
-Document common commands here, such as:
-
-- Install dependencies
-- Run the development server
-- Run tests
-- Build or package the game
