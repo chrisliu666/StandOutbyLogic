@@ -2,9 +2,9 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const root = __dirname;
+const root = path.resolve(__dirname);
 const port = Number(process.argv[2]) || 5188;
-const host = process.argv[3] || process.env.HOST || "127.0.0.1";
+const host = "127.0.0.1";
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -14,14 +14,21 @@ const types = {
 };
 
 const server = http.createServer((request, response) => {
-  let route = decodeURIComponent(request.url.split("?")[0]);
+  let route;
+  try {
+    route = decodeURIComponent(request.url.split("?")[0]);
+  } catch {
+    response.writeHead(400);
+    response.end("Bad request");
+    return;
+  }
   if (route === "/") {
     route = "/index.html";
   }
 
-  const filePath = path.normalize(path.join(root, route));
-  const relativePath = path.relative(root, filePath);
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+  const filePath = path.resolve(root, "." + route);
+  const relative = path.relative(root, filePath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
     response.writeHead(403);
     response.end("Forbidden");
     return;
@@ -43,7 +50,4 @@ const server = http.createServer((request, response) => {
 
 server.listen(port, host, () => {
   console.log(`独数一帜 running at http://${host}:${port}/`);
-  if (host === "0.0.0.0") {
-    console.log(`Local access: http://127.0.0.1:${port}/`);
-  }
 });

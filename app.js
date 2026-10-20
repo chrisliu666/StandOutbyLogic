@@ -2,6 +2,10 @@
   "use strict";
 
   const STORAGE_RECORDS = "stand-out-by-logic.records";
+  const STORAGE_SEEDS = "stand-out-by-logic.seeds";
+  const MAX_SAVED_SEEDS = 60;
+  const SEED_RETRY_PASSES = 3;
+
   const difficultyBlanks = {
     easy: 36,
     medium: 44,
@@ -37,9 +41,6 @@
     clearRecordsBtn: document.getElementById("clearRecordsBtn"),
     recordsList: document.getElementById("recordsList"),
     mascotLine: document.getElementById("mascotLine"),
-    guideModal: document.getElementById("guideModal"),
-    guideModalClose: document.getElementById("guideModalClose"),
-    guideModalDone: document.getElementById("guideModalDone"),
     toast: document.getElementById("toast"),
   };
 
@@ -55,17 +56,15 @@
     seed: "",
     difficulty: "medium",
     startedAt: Date.now(),
-    elapsedBeforePause: 0,
-    timerPaused: false,
     ended: false,
     timerId: null,
     undoStack: [],
     redoStack: [],
     resetSnapshot: null,
     records: loadJson(STORAGE_RECORDS, []),
+    seedStore: loadSeedStore(),
     longPressTimer: null,
     longPressTriggered: false,
-    guideClosed: false,
   };
 
   const mascotLines = {
@@ -85,7 +84,6 @@
     bindActions();
     renderRecords();
     startGame();
-    showFirstVisitGuide();
   }
 
   function buildBoard() {
@@ -103,6 +101,7 @@
         cell.classList.add("box-bottom");
       }
       cell.addEventListener("click", handleCellClick);
+      cell.addEventListener("dblclick", handleCellDoubleClick);
       cell.addEventListener("contextmenu", (event) => event.preventDefault());
       cell.addEventListener("mousedown", handleCellMouseDown);
       cell.addEventListener("mouseup", handleCellMouseUp);
@@ -124,18 +123,15 @@
   }
 
   function bindActions() {
-    els.newGameBtn.addEventListener("click", () => {
-      interruptCurrentGame();
-      startGame();
-    });
+    els.newGameBtn.addEventListener("click", () => startGame());
     els.againBtn.addEventListener("click", () => startGame());
     els.confirmBtn.addEventListener("click", confirmSelected);
     els.hintBtn.addEventListener("click", useHint);
     els.completeBtn.addEventListener("click", completeGame);
-    els.undoBtn?.addEventListener("click", undo);
-    els.redoBtn?.addEventListener("click", redo);
-    els.resetBtn?.addEventListener("click", resetGame);
-    els.undoResetBtn?.addEventListener("click", undoReset);
+    els.undoBtn.addEventListener("click", undo);
+    els.redoBtn.addEventListener("click", redo);
+    els.resetBtn.addEventListener("click", resetGame);
+    els.undoResetBtn.addEventListener("click", undoReset);
     els.loadSeedBtn.addEventListener("click", () => {
       const seed = els.seedInput.value.trim();
       if (!seed) {
@@ -149,40 +145,6 @@
       saveJson(STORAGE_RECORDS, state.records);
       renderRecords();
     });
-    els.guideModalClose?.addEventListener("click", closeGuideModal);
-    els.guideModalDone?.addEventListener("click", closeGuideModal);
-    els.guideModal?.addEventListener("click", (event) => {
-      if (event.target === els.guideModal) {
-        closeGuideModal();
-      }
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && els.guideModal && !els.guideModal.classList.contains("hidden")) {
-        closeGuideModal();
-      }
-    });
-    document.addEventListener("visibilitychange", handleForegroundChange);
-    window.addEventListener("blur", handleForegroundChange);
-    window.addEventListener("focus", handleForegroundChange);
-  }
-
-  function showFirstVisitGuide() {
-    if (!els.guideModal || state.guideClosed) {
-      return;
-    }
-    localStorage.removeItem("stand-out-by-logic.guide-seen");
-    localStorage.removeItem("stand-out-by-logic.guide-seen.v2");
-    els.guideModal.classList.remove("hidden");
-    els.guideModal.removeAttribute("aria-hidden");
-    els.guideModalDone?.focus();
-  }
-
-  function closeGuideModal() {
-    if (!els.guideModal) {
-      return;
-    }
-    els.guideModal.classList.add("hidden");
-    state.guideClosed = true;
   }
 
   function startGame(requestedSeed) {
@@ -196,12 +158,29 @@
     state.undoStack = [];
     state.redoStack = [];
     state.resetSnapshot = null;
+    state.startedAt = Date.now();
     els.againBtn.classList.add("hidden");
     els.seedInput.value = state.seed;
     setMascot("ready");
-    showToast("正在准备本地题目");
+    showToast("正在准备题目");
 
-    const game = createSeededGame(state.seed, state.difficulty);
+    const stored = state.seedStore[state.seed];
+    let game = stored || null;
+    if (!game) {
+      game = createSeededGame(state.seed, state.difficulty);
+      game.savedAt = Date.now();
+      game.lastUsedAt = game.savedAt;
+      state.seedStore[state.seed] = game;
+    } else {
+      if (difficultyNames[game.difficulty]) {
+        state.difficulty = game.difficulty;
+        els.difficulty.value = game.difficulty;
+      } else {
+        game.difficulty = state.difficulty;
+      }
+      game.lastUsedAt = Date.now();
+    }
+    saveSeedStore();
 
     state.puzzle = game.puzzle.slice();
     state.solution = game.solution.slice();
@@ -227,13 +206,121 @@
     const digitMap = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], rng);
     let solution = base.map((value) => digitMap[value - 1]);
     solution = shuffleRowsAndColumns(solution, rng);
-    const puzzle = solution.slice();
     const holes = difficultyBlanks[difficulty] || difficultyBlanks.medium;
-    const positions = shuffle([...Array(81).keys()], rng).slice(0, holes);
-    positions.forEach((index) => {
-      puzzle[index] = 0;
-    });
+    const puzzle = createPuzzleWithUniqueSolution(solution, holes, rng);
     return { puzzle, solution, difficulty };
+  }
+
+  function createPuzzleWithUniqueSolution(solution, targetHoles, rng) {
+    let best = null;
+    for (let pass = 0; pass < SEED_RETRY_PASSES; pass += 1) {
+      const puzzle = solution.slice();
+      let removed = 0;
+      const positions = shuffle([...Array(81).keys()], rng);
+      for (const index of positions) {
+        if (removed >= targetHoles) {
+          break;
+        }
+        const value = puzzle[index];
+        puzzle[index] = 0;
+        if (countSolutions(puzzle) === 1) {
+          removed += 1;
+        } else {
+          puzzle[index] = value;
+        }
+      }
+      if (!best || removed > best.removed) {
+        best = { puzzle, removed };
+      }
+      if (removed >= targetHoles) {
+        break;
+      }
+    }
+    return best.puzzle;
+  }
+
+  function countSolutions(puzzle) {
+    const grid = puzzle.slice();
+    const rows = new Array(9).fill(0);
+    const cols = new Array(9).fill(0);
+    const boxes = new Array(9).fill(0);
+    for (let index = 0; index < 81; index += 1) {
+      const value = grid[index];
+      if (!value) {
+        continue;
+      }
+      const row = Math.floor(index / 9);
+      const col = index % 9;
+      const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+      const bit = 1 << (value - 1);
+      if ((rows[row] & bit) || (cols[col] & bit) || (boxes[box] & bit)) {
+        return 0;
+      }
+      rows[row] |= bit;
+      cols[col] |= bit;
+      boxes[box] |= bit;
+    }
+    return searchSolutions(grid, rows, cols, boxes, 2);
+  }
+
+  function searchSolutions(grid, rows, cols, boxes, limit) {
+    if (limit <= 0) {
+      return 0;
+    }
+    let bestIndex = -1;
+    let bestMask = 0;
+    let bestCount = 10;
+    for (let index = 0; index < 81; index += 1) {
+      if (grid[index]) {
+        continue;
+      }
+      const row = Math.floor(index / 9);
+      const col = index % 9;
+      const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+      const mask = ~(rows[row] | cols[col] | boxes[box]) & 0x1ff;
+      if (mask === 0) {
+        return 0;
+      }
+      let count = 0;
+      let bits = mask;
+      while (bits) {
+        count += 1;
+        bits &= bits - 1;
+      }
+      if (count < bestCount) {
+        bestIndex = index;
+        bestMask = mask;
+        bestCount = count;
+        if (count === 1) {
+          break;
+        }
+      }
+    }
+    if (bestIndex === -1) {
+      return 1;
+    }
+    const row = Math.floor(bestIndex / 9);
+    const col = bestIndex % 9;
+    const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+    let total = 0;
+    let bits = bestMask;
+    while (bits) {
+      const bit = bits & -bits;
+      bits ^= bit;
+      grid[bestIndex] = 32 - Math.clz32(bit);
+      rows[row] |= bit;
+      cols[col] |= bit;
+      boxes[box] |= bit;
+      total += searchSolutions(grid, rows, cols, boxes, limit - total);
+      grid[bestIndex] = 0;
+      rows[row] ^= bit;
+      cols[col] ^= bit;
+      boxes[box] ^= bit;
+      if (total >= limit) {
+        break;
+      }
+    }
+    return total;
   }
 
   function shuffleRowsAndColumns(grid, rng) {
@@ -257,6 +344,12 @@
     selectCell(index);
   }
 
+  function handleCellDoubleClick(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    selectCell(index);
+    setCellValue(index, 1);
+  }
+
   function handleCellMouseDown(event) {
     const index = Number(event.currentTarget.dataset.index);
     selectCell(index);
@@ -276,6 +369,7 @@
     clearLongPress();
     if (event.button === 2 && !wasLongPress) {
       event.preventDefault();
+      changeCell(index, -1);
     } else if (event.button === 2 && wasLongPress) {
       state.longPressTriggered = false;
     }
@@ -376,11 +470,7 @@
     } else {
       state.mistakes += 1;
       setMascot("bad");
-      if (state.mistakes === 2) {
-        showToast("已经错 2 次了，只剩 1 次机会");
-      } else {
-        showToast(`错误，还剩 ${Math.max(0, 3 - state.mistakes)} 次机会`);
-      }
+      showToast(`错误，还剩 ${Math.max(0, 3 - state.mistakes)} 次机会`);
       if (state.mistakes >= 3) {
         finishGame("失败");
       }
@@ -413,11 +503,7 @@
     pushHistory({ type: "hint", index, before, after: snapshotCell(index), hintsBefore: state.hints + 1, hintsAfter: state.hints });
     state.redoStack = [];
     setMascot("hint");
-    if (state.hints === 1) {
-      showToast("提示只剩 1 次了");
-    } else {
-      showToast("提示已填入");
-    }
+    showToast("提示已填入");
     checkWin();
     render();
     animateCell(index, "spark");
@@ -447,19 +533,26 @@
   }
 
   function resetGame() {
-    if (state.ended) {
-      return;
-    }
+    const wasEnded = state.ended;
     state.resetSnapshot = snapshotGame();
     state.values = state.puzzle.slice();
     state.statuses = state.puzzle.map((value) => (value ? "given" : "empty"));
     state.selected = null;
     state.highlightedValue = 0;
-    state.hints = 3;
-    state.mistakes = 0;
     state.undoStack = [];
     state.redoStack = [];
-    showToast("已重置，可撤销重置");
+    if (wasEnded) {
+      state.hints = 3;
+      state.mistakes = 0;
+      state.ended = false;
+      state.startedAt = Date.now();
+      els.againBtn.classList.add("hidden");
+      restartTimer();
+      setMascot("ready");
+      showToast("已重置并重新计时，可撤销重置");
+    } else {
+      showToast("已清空填数，错误与提示次数保留");
+    }
     render();
   }
 
@@ -509,11 +602,7 @@
   }
 
   function checkWin() {
-    const solved = state.values.every((value, index) => {
-      const status = state.statuses[index];
-      const fixed = status === "given" || status === "confirmed" || status === "hinted";
-      return fixed && value === state.solution[index];
-    });
+    const solved = state.values.every((value, index) => value === state.solution[index]);
     if (solved) {
       finishGame("成功");
     }
@@ -525,25 +614,6 @@
     }
     state.ended = true;
     window.clearInterval(state.timerId);
-    recordGame(result);
-    if (result === "失败") {
-      els.againBtn.classList.remove("hidden");
-      setMascot("fail");
-    } else {
-      setMascot("win");
-    }
-  }
-
-  function interruptCurrentGame() {
-    if (state.ended || !state.seed || state.solution.length === 0) {
-      return;
-    }
-    state.ended = true;
-    window.clearInterval(state.timerId);
-    recordGame("中断");
-  }
-
-  function recordGame(result) {
     const seconds = elapsedSeconds();
     state.records.unshift({
       result,
@@ -555,6 +625,12 @@
     state.records = state.records.slice(0, 20);
     saveJson(STORAGE_RECORDS, state.records);
     renderRecords();
+    if (result === "失败") {
+      els.againBtn.classList.remove("hidden");
+      setMascot("fail");
+    } else {
+      setMascot("win");
+    }
   }
 
   function render() {
@@ -589,15 +665,9 @@
     els.hintBtn.disabled = state.hints <= 0 || state.ended;
     els.confirmBtn.disabled = state.ended;
     els.completeBtn.disabled = state.ended;
-    if (els.undoBtn) {
-      els.undoBtn.disabled = state.undoStack.length === 0 || state.ended;
-    }
-    if (els.redoBtn) {
-      els.redoBtn.disabled = state.redoStack.length === 0 || state.ended;
-    }
-    if (els.undoResetBtn) {
-      els.undoResetBtn.disabled = !state.resetSnapshot || state.ended;
-    }
+    els.undoBtn.disabled = state.undoStack.length === 0 || state.ended;
+    els.redoBtn.disabled = state.redoStack.length === 0 || state.ended;
+    els.undoResetBtn.disabled = !state.resetSnapshot || state.ended;
     renderNumberProgress();
   }
 
@@ -613,15 +683,7 @@
       const value = Number(item.dataset.value);
       const count = counts[value];
       item.querySelector("span").textContent = `${count}/9`;
-      item.classList.toggle("almost", count >= 8 && count < 9);
       item.classList.toggle("filled", count >= 9);
-      if (count >= 9) {
-        item.title = `${value} 已填满`;
-      } else if (count >= 8) {
-        item.title = `${value} 还差 1 个`;
-      } else {
-        item.title = `${value} 已固定 ${count} 个`;
-      }
     });
   }
 
@@ -652,59 +714,14 @@
 
   function restartTimer() {
     window.clearInterval(state.timerId);
-    state.startedAt = Date.now();
-    state.elapsedBeforePause = 0;
-    state.timerPaused = false;
-    els.timer.textContent = "00:00";
-    if (shouldPauseTimer()) {
-      pauseTimer();
-      return;
-    }
-    startTimerInterval();
-  }
-
-  function elapsedSeconds() {
-    const activeElapsed = state.timerPaused ? 0 : Date.now() - state.startedAt;
-    return Math.floor((state.elapsedBeforePause + activeElapsed) / 1000);
-  }
-
-  function startTimerInterval() {
-    window.clearInterval(state.timerId);
     state.timerId = window.setInterval(() => {
       els.timer.textContent = formatTime(elapsedSeconds());
     }, 500);
-  }
-
-  function pauseTimer() {
-    if (state.ended || state.timerPaused) {
-      return;
-    }
-    state.elapsedBeforePause += Date.now() - state.startedAt;
-    state.timerPaused = true;
-    window.clearInterval(state.timerId);
     els.timer.textContent = formatTime(elapsedSeconds());
   }
 
-  function resumeTimer() {
-    if (state.ended || !state.timerPaused) {
-      return;
-    }
-    state.startedAt = Date.now();
-    state.timerPaused = false;
-    startTimerInterval();
-    els.timer.textContent = formatTime(elapsedSeconds());
-  }
-
-  function handleForegroundChange() {
-    if (shouldPauseTimer()) {
-      pauseTimer();
-    } else {
-      resumeTimer();
-    }
-  }
-
-  function shouldPauseTimer() {
-    return document.hidden || (typeof document.hasFocus === "function" && !document.hasFocus());
+  function elapsedSeconds() {
+    return Math.floor((Date.now() - state.startedAt) / 1000);
   }
 
   function formatTime(totalSeconds) {
@@ -755,6 +772,8 @@
       highlightedValue: state.highlightedValue,
       hints: state.hints,
       mistakes: state.mistakes,
+      ended: state.ended,
+      startedAt: state.startedAt,
     };
   }
 
@@ -765,6 +784,19 @@
     state.highlightedValue = snapshot.highlightedValue;
     state.hints = snapshot.hints;
     state.mistakes = snapshot.mistakes;
+    if (typeof snapshot.startedAt === "number") {
+      state.startedAt = snapshot.startedAt;
+    }
+    state.ended = Boolean(snapshot.ended);
+    if (state.ended) {
+      window.clearInterval(state.timerId);
+      state.timerId = null;
+      els.timer.textContent = formatTime(elapsedSeconds());
+      els.againBtn.classList.toggle("hidden", state.mistakes < 3);
+    } else {
+      els.againBtn.classList.add("hidden");
+      restartTimer();
+    }
   }
 
   function pushHistory(action) {
@@ -796,7 +828,7 @@
     window.clearTimeout(showToast.timer);
     showToast.timer = window.setTimeout(() => {
       els.toast.classList.remove("show");
-    }, 1000);
+    }, 1800);
   }
 
   function createSeed(difficulty) {
@@ -843,5 +875,45 @@
 
   function saveJson(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  function loadSeedStore() {
+    const stored = loadJson(STORAGE_SEEDS, {});
+    return stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
+  }
+
+  function seedRecency(game) {
+    return (game && (game.lastUsedAt || game.savedAt)) || 0;
+  }
+
+  function pruneSeedStore() {
+    const seeds = Object.keys(state.seedStore);
+    if (seeds.length <= MAX_SAVED_SEEDS) {
+      return;
+    }
+    seeds.sort((a, b) => seedRecency(state.seedStore[a]) - seedRecency(state.seedStore[b]));
+    seeds.slice(0, seeds.length - MAX_SAVED_SEEDS).forEach((seed) => {
+      delete state.seedStore[seed];
+    });
+  }
+
+  function saveSeedStore() {
+    pruneSeedStore();
+    try {
+      saveJson(STORAGE_SEEDS, state.seedStore);
+      return;
+    } catch {
+      const seeds = Object.keys(state.seedStore).sort(
+        (a, b) => seedRecency(state.seedStore[a]) - seedRecency(state.seedStore[b])
+      );
+      seeds.slice(0, Math.ceil(seeds.length / 2)).forEach((seed) => {
+        delete state.seedStore[seed];
+      });
+    }
+    try {
+      saveJson(STORAGE_SEEDS, state.seedStore);
+    } catch {
+      state.seedStore = {};
+    }
   }
 })();
