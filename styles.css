@@ -478,14 +478,15 @@ h1 {
   position: fixed;
   left: 50%;
   top: 50%;
-  min-width: 220px;
+  width: max-content;
   max-width: min(420px, calc(100vw - 32px));
-  padding: 12px 16px;
+  padding: 12px 20px;
   border: 1px solid rgba(143, 115, 80, 0.24);
   border-radius: 8px;
   color: var(--ink);
   background: rgba(255, 250, 241, 0.96);
   box-shadow: var(--shadow);
+  text-align: center;
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -50%) scale(0.96);

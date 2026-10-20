@@ -147,11 +147,8 @@
 
 ## 当前题库来源与兜底策略
 
-- 当前联网题库接口：Dosuku API，`https://sudoku-api.vercel.app/api/dosuku`。
-- 当前接口返回题面和答案，项目使用返回数据生成本局题目。
-- 新随机局会优先联网获取题目，并用本局种子码保存到当前浏览器本地，便于复现。
+- 种子码保存到当前浏览器本地，便于复现。
 - 用户手动输入未保存过的种子码时，使用项目内置的确定性数独生成逻辑生成同一局，保证种子码可复现。
-- 当联网题库不可用时，自动使用项目内置确定性数独生成逻辑作为兜底。
 - 当前难度通过挖空数量控制：简单、普通、困难、专家。
 
 ## 桌面版（Electron 单机版）
@@ -207,6 +204,7 @@
 - 修复图例与实际颜色不符：合并“题面 / 已确认”图例项，与实际格子样式一致。
 - 修复 `dev-server.js` 路径越界校验：改用 `path.relative` 判断，避免 `startsWith` 前缀误判。
 - 新增计时暂停：页面隐藏（网页版切后台、桌面版最小化）时冻结计时，回到前台后继续。
+- 提示弹层（toast）宽度改为随文字自适应，文字与弹层内容居中，取消固定最小宽度。
 
 ### 2026-08-17
 
@@ -300,4 +298,90 @@ stop-dev-server.cmd 5188
 http://127.0.0.1:5188/
 ```
 
+当前检查命令：
 
+```bash
+node --check app.js
+```
+
+## 桌面版构建（Electron 单机版）
+
+首次构建先安装依赖：
+
+```bash
+npm install
+```
+
+开发预览（打开窗口直接游玩）：
+
+```bash
+npm run start
+```
+
+打包单个便携 exe：
+
+```bash
+npm run dist
+```
+
+产物在 `dist/独数一帜.exe`，双击即可运行，无需浏览器。
+
+桌面版相关文件：`package.json`、`electron-main.js`。桌面版完全离线，题库使用内置确定性生成逻辑。
+
+## 历史原文：英文初版
+
+# Sudoku Web Game
+
+This repository is for a browser-based Sudoku mini game.
+
+## Status
+
+The project is currently in the requirements and documentation stage.
+
+## Product Goal
+
+Build a lightweight Sudoku web game with a fresh classical visual style and highly polished mouse interactions.
+
+The puzzle library should be sourced from publicly available online Sudoku puzzle data or generated from an online-compatible dataset format. When implementation begins, document the selected source, license, and update method.
+
+## UI Direction
+
+- Fresh and classical style.
+- Calm, readable board layout.
+- Clear 9x9 grid with stronger visual separation for each 3x3 box.
+- Avoid clutter around the board so the interaction remains the focus.
+- Use tasteful colors, subtle borders, and refined typography.
+
+## Core Interaction
+
+Each Sudoku cell supports mouse-first input:
+
+- Double-click: set the selected cell value to `0`.
+- Left-click: increase the cell value by `1`.
+- Right-click: decrease the cell value by `1`.
+- Mouse wheel up: increase the cell value by `1`.
+- Mouse wheel down: decrease the cell value by `1`.
+- Long press: clear the cell.
+- Single click on a cell: highlight all cells with the same number.
+
+Value changes should stay within the supported Sudoku range. The intended cycle is `0` through `9`, where `0` represents an empty cell.
+
+## Expected Gameplay Behavior
+
+- Given puzzle clues should be visually distinct from player-entered values.
+- Given puzzle clues should not be accidentally editable unless an explicit edit mode is introduced.
+- Highlighting should update immediately when the focused or clicked number changes.
+- Empty cells with value `0` should be displayed as blank in the board UI unless a debug mode is added.
+- Right-click interaction should prevent the browser context menu on board cells.
+- Wheel interaction should prevent accidental page scrolling while the pointer is over the board.
+
+## Development
+
+No development commands are defined yet.
+
+Document common commands here, such as:
+
+- Install dependencies
+- Run the development server
+- Run tests
+- Build or package the game
