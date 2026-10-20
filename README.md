@@ -4,6 +4,7 @@
 
 英文名：`Stand Out by Logic`
 
+网页： https://chrisliu666.github.io/StandOutbyLogic/
 ## 当前状态
 
 项目目前已经完成第一版静态网页实现，可通过本地 HTTP 服务运行。
