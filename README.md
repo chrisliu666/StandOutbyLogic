@@ -8,7 +8,7 @@
 
 ## 当前状态
 
-项目目前已经完成第一版静态网页实现，可通过本地 HTTP 服务运行。
+项目目前已经完成静态网页实现，可通过本地 HTTP 服务运行。另有单机离线版本。
 
 ## 当前实现文件
 
@@ -29,7 +29,7 @@
 
 ## 已确认构想
 
-- 题库方式：联网加载公开数独题库。
+- 题库方式：本地生成题库。
 - 难度设置：需要分级。
 - 二次元表现：需要看板娘。
 - 数据保存：对局记录保存在当前浏览器本地。
@@ -300,90 +300,4 @@ stop-dev-server.cmd 5188
 http://127.0.0.1:5188/
 ```
 
-当前检查命令：
 
-```bash
-node --check app.js
-```
-
-## 桌面版构建（Electron 单机版）
-
-首次构建先安装依赖：
-
-```bash
-npm install
-```
-
-开发预览（打开窗口直接游玩）：
-
-```bash
-npm run start
-```
-
-打包单个便携 exe：
-
-```bash
-npm run dist
-```
-
-产物在 `dist/独数一帜.exe`，双击即可运行，无需浏览器。
-
-桌面版相关文件：`package.json`、`electron-main.js`。桌面版完全离线，题库使用内置确定性生成逻辑。
-
-## 历史原文：英文初版
-
-# Sudoku Web Game
-
-This repository is for a browser-based Sudoku mini game.
-
-## Status
-
-The project is currently in the requirements and documentation stage.
-
-## Product Goal
-
-Build a lightweight Sudoku web game with a fresh classical visual style and highly polished mouse interactions.
-
-The puzzle library should be sourced from publicly available online Sudoku puzzle data or generated from an online-compatible dataset format. When implementation begins, document the selected source, license, and update method.
-
-## UI Direction
-
-- Fresh and classical style.
-- Calm, readable board layout.
-- Clear 9x9 grid with stronger visual separation for each 3x3 box.
-- Avoid clutter around the board so the interaction remains the focus.
-- Use tasteful colors, subtle borders, and refined typography.
-
-## Core Interaction
-
-Each Sudoku cell supports mouse-first input:
-
-- Double-click: set the selected cell value to `0`.
-- Left-click: increase the cell value by `1`.
-- Right-click: decrease the cell value by `1`.
-- Mouse wheel up: increase the cell value by `1`.
-- Mouse wheel down: decrease the cell value by `1`.
-- Long press: clear the cell.
-- Single click on a cell: highlight all cells with the same number.
-
-Value changes should stay within the supported Sudoku range. The intended cycle is `0` through `9`, where `0` represents an empty cell.
-
-## Expected Gameplay Behavior
-
-- Given puzzle clues should be visually distinct from player-entered values.
-- Given puzzle clues should not be accidentally editable unless an explicit edit mode is introduced.
-- Highlighting should update immediately when the focused or clicked number changes.
-- Empty cells with value `0` should be displayed as blank in the board UI unless a debug mode is added.
-- Right-click interaction should prevent the browser context menu on board cells.
-- Wheel interaction should prevent accidental page scrolling while the pointer is over the board.
-
-## Development
-
-No development commands are defined yet.
-
-Document common commands here, such as:
-
-- Install dependencies
-- Run the development server
-- Run tests
-- Build or package the game
