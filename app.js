@@ -65,6 +65,7 @@
     seedStore: loadSeedStore(),
     longPressTimer: null,
     longPressTriggered: false,
+    hiddenAt: null,
   };
 
   const mascotLines = {
@@ -82,6 +83,7 @@
     buildBoard();
     buildNumberProgress();
     bindActions();
+    bindVisibilityPause();
     renderRecords();
     startGame();
   }
@@ -147,6 +149,31 @@
     });
   }
 
+  function bindVisibilityPause() {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      if (state.ended) {
+        return;
+      }
+      state.hiddenAt = Date.now();
+      window.clearInterval(state.timerId);
+      state.timerId = null;
+      return;
+    }
+    if (state.hiddenAt !== null) {
+      state.startedAt += Date.now() - state.hiddenAt;
+      state.hiddenAt = null;
+    }
+    if (state.ended) {
+      els.timer.textContent = formatTime(elapsedSeconds());
+    } else {
+      restartTimer();
+    }
+  }
+
   function startGame(requestedSeed) {
     state.difficulty = els.difficulty.value;
     state.seed = requestedSeed || createSeed(state.difficulty);
@@ -159,6 +186,7 @@
     state.redoStack = [];
     state.resetSnapshot = null;
     state.startedAt = Date.now();
+    state.hiddenAt = document.hidden ? Date.now() : null;
     els.againBtn.classList.add("hidden");
     els.seedInput.value = state.seed;
     setMascot("ready");
@@ -546,6 +574,7 @@
       state.mistakes = 0;
       state.ended = false;
       state.startedAt = Date.now();
+      state.hiddenAt = document.hidden ? Date.now() : null;
       els.againBtn.classList.add("hidden");
       restartTimer();
       setMascot("ready");
@@ -613,6 +642,7 @@
       return;
     }
     state.ended = true;
+    state.hiddenAt = null;
     window.clearInterval(state.timerId);
     const seconds = elapsedSeconds();
     state.records.unshift({
@@ -789,11 +819,13 @@
     }
     state.ended = Boolean(snapshot.ended);
     if (state.ended) {
+      state.hiddenAt = null;
       window.clearInterval(state.timerId);
       state.timerId = null;
       els.timer.textContent = formatTime(elapsedSeconds());
       els.againBtn.classList.toggle("hidden", state.mistakes < 3);
     } else {
+      state.hiddenAt = document.hidden ? Date.now() : null;
       els.againBtn.classList.add("hidden");
       restartTimer();
     }
