@@ -31,6 +31,7 @@
     difficulty: document.getElementById("difficulty"),
     newGameBtn: document.getElementById("newGameBtn"),
     confirmBtn: document.getElementById("confirmBtn"),
+    clearBtn: document.getElementById("clearBtn"),
     hintBtn: document.getElementById("hintBtn"),
     completeBtn: document.getElementById("completeBtn"),
     undoBtn: document.getElementById("undoBtn"),
@@ -84,6 +85,7 @@
     buildNumberProgress();
     bindActions();
     bindVisibilityPause();
+    bindKeyboardInput();
     renderRecords();
     startGame();
   }
@@ -116,10 +118,13 @@
   function buildNumberProgress() {
     els.numberProgress.innerHTML = "";
     for (let value = 1; value <= 9; value += 1) {
-      const item = document.createElement("div");
+      const item = document.createElement("button");
+      item.type = "button";
       item.className = "number-progress-item";
       item.dataset.value = String(value);
+      item.setAttribute("aria-label", `填入数字 ${value}`);
       item.innerHTML = `<strong>${value}</strong><span>0/9</span>`;
+      item.addEventListener("click", () => applyNumberInput(value));
       els.numberProgress.appendChild(item);
     }
   }
@@ -128,6 +133,7 @@
     els.newGameBtn.addEventListener("click", () => startGame());
     els.againBtn.addEventListener("click", () => startGame());
     els.confirmBtn.addEventListener("click", confirmSelected);
+    els.clearBtn.addEventListener("click", clearSelectedCell);
     els.hintBtn.addEventListener("click", useHint);
     els.completeBtn.addEventListener("click", completeGame);
     els.undoBtn.addEventListener("click", undo);
@@ -151,6 +157,242 @@
 
   function bindVisibilityPause() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
+
+  function bindKeyboardInput() {
+    document.addEventListener("keydown", handleKeydown);
+  }
+
+  function applyNumberInput(value) {
+    if (state.ended) {
+      return;
+    }
+    if (state.selected === null) {
+      showToast("请先选择一个格子");
+      return;
+    }
+    if (!canEdit(state.selected)) {
+      showToast("该格不可修改");
+      return;
+    }
+    setCellValue(state.selected, value);
+  }
+
+  function handleKeydown(event) {
+    if (event.repeat || event.ctrlKey || event.altKey || event.metaKey) {
+      return;
+    }
+    const target = event.target;
+    const targetEl = target instanceof HTMLElement ? target : null;
+    if (targetEl) {
+      const tag = targetEl.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || targetEl.isContentEditable) {
+        return;
+      }
+    }
+    if (isArrowKey(event.key)) {
+      if (
+        !targetEl ||
+        targetEl === document.body ||
+        targetEl === document.documentElement ||
+        targetEl.classList.contains("cell")
+      ) {
+        event.preventDefault();
+        moveBoardSelection(event.key);
+        return;
+      }
+      if (targetEl.classList.contains("number-progress-item")) {
+        event.preventDefault();
+        moveNumberBarFocus(event.key);
+        return;
+      }
+      if (targetEl.closest(".control-panel")) {
+        event.preventDefault();
+        moveControlPanelFocus(event.key);
+      }
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      focusSelectedCell();
+      return;
+    }
+    if (event.key === "Enter") {
+      if (targetEl && targetEl.tagName === "BUTTON" && !targetEl.classList.contains("cell")) {
+        return;
+      }
+      event.preventDefault();
+      confirmSelected();
+      return;
+    }
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      clearSelectedCell();
+      return;
+    }
+    if (event.key === "t" || event.key === "T") {
+      event.preventDefault();
+      useHint();
+      return;
+    }
+    if (!/^[1-9]$/.test(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    applyNumberInput(Number(event.key));
+  }
+
+  function clearSelectedCell() {
+    if (state.ended) {
+      return;
+    }
+    if (state.selected === null) {
+      showToast("请先选择一个格子");
+      return;
+    }
+    if (!canEdit(state.selected)) {
+      showToast("该格不可修改");
+      return;
+    }
+    clearCell(state.selected);
+  }
+
+  function isArrowKey(key) {
+    return key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight";
+  }
+
+  function moveBoardSelection(key) {
+    if (key === "ArrowRight" && state.selected !== null && state.selected % 9 === 8) {
+      focusControlPanel();
+      return;
+    }
+    const start = state.selected === null ? 40 : state.selected;
+    const next = stepBoardIndex(start, key);
+    selectCell(next);
+    els.board.children[next].focus();
+  }
+
+  function focusControlPanel() {
+    const panel = document.querySelector(".control-panel");
+    if (!panel) {
+      return;
+    }
+    const items = [...panel.querySelectorAll("button:not(:disabled)")].filter(
+      (item) => item.getClientRects().length > 0
+    );
+    if (items.length > 0) {
+      items[0].focus();
+    }
+  }
+
+  function stepBoardIndex(index, key) {
+    const row = Math.floor(index / 9);
+    const col = index % 9;
+    if (key === "ArrowUp") {
+      return row > 0 ? index - 9 : index;
+    }
+    if (key === "ArrowDown") {
+      return row < 8 ? index + 9 : index;
+    }
+    if (key === "ArrowLeft") {
+      return col > 0 ? index - 1 : index;
+    }
+    return col < 8 ? index + 1 : index;
+  }
+
+  function focusSelectedCell() {
+    if (state.selected === null) {
+      selectCell(40);
+    }
+    const cell = els.board.children[state.selected];
+    if (cell) {
+      cell.focus();
+    }
+  }
+
+  function moveNumberBarFocus(key) {
+    const items = [...els.numberProgress.querySelectorAll(".number-progress-item")];
+    if (items.length === 0) {
+      return;
+    }
+    const currentIndex = items.indexOf(document.activeElement);
+    if (currentIndex === -1) {
+      items[0].focus();
+      return;
+    }
+    const direction = key === "ArrowLeft" || key === "ArrowUp" ? -1 : 1;
+    const nextIndex = Math.min(items.length - 1, Math.max(0, currentIndex + direction));
+    items[nextIndex].focus();
+  }
+
+  function moveControlPanelFocus(key) {
+    const panel = document.querySelector(".control-panel");
+    if (!panel) {
+      return;
+    }
+    const items = [...panel.querySelectorAll("button:not(:disabled)")].filter(
+      (item) => item.getClientRects().length > 0
+    );
+    if (items.length === 0) {
+      return;
+    }
+    const current = document.activeElement;
+    if (!items.includes(current)) {
+      items[0].focus();
+      return;
+    }
+    const neighbor = findDirectionalNeighbor(items, current, key);
+    if (neighbor) {
+      neighbor.focus();
+      return;
+    }
+    if (key === "ArrowLeft") {
+      focusSelectedCell();
+    }
+  }
+
+  function findDirectionalNeighbor(items, current, key) {
+    const rect = current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const vertical = key === "ArrowUp" || key === "ArrowDown";
+    const candidates = [];
+    items.forEach((item) => {
+      if (item === current) {
+        return;
+      }
+      const other = item.getBoundingClientRect();
+      if (!other.width || !other.height) {
+        return;
+      }
+      const dx = other.left + other.width / 2 - cx;
+      const dy = other.top + other.height / 2 - cy;
+      let primary;
+      if (key === "ArrowUp") {
+        primary = -dy;
+      } else if (key === "ArrowDown") {
+        primary = dy;
+      } else if (key === "ArrowLeft") {
+        primary = -dx;
+      } else {
+        primary = dx;
+      }
+      if (primary <= 1) {
+        return;
+      }
+      const secondary = vertical ? Math.abs(dx) : Math.abs(dy);
+      const aligned = vertical
+        ? rect.left < other.right && other.left < rect.right
+        : rect.top < other.bottom && other.top < rect.bottom;
+      candidates.push({ item, primary, secondary, aligned });
+    });
+    if (candidates.length === 0) {
+      return null;
+    }
+    const aligned = candidates.filter((candidate) => candidate.aligned);
+    const pool = aligned.length > 0 ? aligned : candidates;
+    pool.sort((a, b) => a.primary - b.primary || a.secondary - b.secondary);
+    return pool[0].item;
   }
 
   function handleVisibilityChange() {
