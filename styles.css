@@ -278,10 +278,30 @@ h1 {
   display: grid;
   place-items: center;
   min-height: 38px;
+  padding: 0;
   border: 1px solid rgba(35, 143, 185, 0.24);
   border-radius: 8px;
   color: #235f7b;
   background: #ffffff;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.number-progress-item:hover:not(:disabled) {
+  border-color: rgba(35, 143, 185, 0.62);
+  background: #f2fbff;
+  transform: translateY(-1px);
+}
+
+.number-progress-item:active:not(:disabled) {
+  background: #e3f5fd;
+  transform: translateY(1px);
+}
+
+.number-progress-item:focus-visible {
+  outline: 2px solid rgba(35, 143, 185, 0.62);
+  outline-offset: 1px;
 }
 
 .number-progress-item strong {
@@ -403,8 +423,8 @@ h1 {
   flex-shrink: 0;
 }
 
-.actions button:nth-child(1),
-.actions button:nth-child(9) {
+#newGameBtn,
+#againBtn {
   grid-column: 1 / -1;
 }
 
@@ -476,6 +496,7 @@ h1 {
 
 .toast {
   position: fixed;
+  z-index: 1000;
   left: 50%;
   top: 50%;
   width: max-content;
