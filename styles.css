@@ -131,6 +131,7 @@ h1 {
 .sudoku-board {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
   width: min(100%, 680px, calc(100vh - 300px));
   aspect-ratio: 1;
   margin: 12px auto;
@@ -218,6 +219,32 @@ h1 {
 .cell.confirmed.same,
 .cell.hinted.same {
   color: #d7357a;
+}
+
+.cell .digit {
+  display: inline-block;
+  line-height: 1;
+}
+
+.cell .digit.d3,
+.cell .digit.d4,
+.cell .digit.d9 {
+  transform: translateY(-0.168em);
+}
+
+.cell .digit.d5,
+.cell .digit.d7 {
+  transform: translateY(-0.18em);
+}
+
+.cell .digit.d6,
+.cell .digit.d8 {
+  transform: translateY(-0.005em);
+}
+
+.cell .digit.d1,
+.cell .digit.d2 {
+  transform: translateY(-0.105em) scaleY(1.333);
 }
 
 .cell.bump {

@@ -909,7 +909,13 @@
     [...els.board.children].forEach((cell, index) => {
       const value = state.values[index];
       const status = state.statuses[index];
-      cell.textContent = value ? String(value) : "";
+      cell.textContent = "";
+      if (value) {
+        const digit = document.createElement("span");
+        digit.className = `digit d${value}`;
+        digit.textContent = String(value);
+        cell.appendChild(digit);
+      }
       cell.disabled = state.ended;
       cell.setAttribute("aria-disabled", String(status === "given" || status === "confirmed" || status === "hinted"));
       cell.className = "cell";
