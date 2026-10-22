@@ -44,25 +44,30 @@
           </div>
         </section>
 
-        <section class="guide-panel" aria-label="操作说明">
-          <p class="panel-title">操作说明</p>
-          <ul>
-            <li><strong>左键单击</strong><span>选中格子，并高亮所有相同数字</span></li>
-            <li><strong>右键单击</strong><span>数字 -1</span></li>
-            <li><strong>滚轮</strong><span>上滚 +1，下滚 -1</span></li>
-            <li><strong>双击</strong><span>直接填入 1</span></li>
-            <li><strong>数字栏</strong><span>点击 1-9 填入选中格</span></li>
-            <li><strong>键盘</strong><span>按 1-9 填入选中格</span></li>
-            <li><strong>Enter</strong><span>确认当前格</span></li>
-            <li><strong>Delete</strong><span>清除当前格（含退格）</span></li>
-            <li><strong>方向键</strong><span>移动选中格 / 右侧按钮</span></li>
-            <li><strong>Esc</strong><span>焦点回到棋盘</span></li>
-            <li><strong>T</strong><span>使用提示</span></li>
-            <li><strong>长按</strong><span>清除当前格</span></li>
-            <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
-            <li><strong>确认</strong><span>正确则固定，错误扣 1 次机会</span></li>
-            <li><strong>提示</strong><span>每局 3 次，直接填入正确数字</span></li>
-          </ul>
+        <section id="guidePanel" class="guide-panel collapsed" aria-label="操作说明">
+          <button id="guideToggle" class="guide-toggle" type="button" aria-expanded="false" aria-controls="guideBody">
+            <span class="panel-title">操作说明</span>
+            <span class="guide-chevron" aria-hidden="true">▾</span>
+          </button>
+          <div id="guideBody" class="guide-body" aria-hidden="true" inert>
+            <ul>
+              <li><strong>左键单击</strong><span>选中格子，并高亮所有相同数字</span></li>
+              <li><strong>右键单击</strong><span>数字 -1</span></li>
+              <li><strong>滚轮</strong><span>上滚 +1，下滚 -1</span></li>
+              <li><strong>双击</strong><span>直接填入 1</span></li>
+              <li><strong>数字栏</strong><span>点击 1-9 填入选中格</span></li>
+              <li><strong>键盘</strong><span>按 1-9 填入选中格</span></li>
+              <li><strong>Enter</strong><span>确认当前格</span></li>
+              <li><strong>Delete</strong><span>清除当前格（含退格）</span></li>
+              <li><strong>方向键</strong><span>移动选中格 / 右侧按钮</span></li>
+              <li><strong>Esc</strong><span>焦点回到棋盘</span></li>
+              <li><strong>T</strong><span>使用提示</span></li>
+              <li><strong>长按</strong><span>清除当前格</span></li>
+              <li><strong>右键长按</strong><span>确认当前临时数字</span></li>
+              <li><strong>确认</strong><span>正确则固定，错误扣 1 次机会</span></li>
+              <li><strong>提示</strong><span>每局 3 次，直接填入正确数字</span></li>
+            </ul>
+          </div>
         </section>
 
         <section class="settings">

@@ -3,6 +3,7 @@
 
   const STORAGE_RECORDS = "stand-out-by-logic.records";
   const STORAGE_SEEDS = "stand-out-by-logic.seeds";
+  const STORAGE_GUIDE_SEEN = "stand-out-by-logic.guideSeen";
   const MAX_SAVED_SEEDS = 60;
   const SEED_RETRY_PASSES = 3;
 
@@ -43,6 +44,9 @@
     recordsList: document.getElementById("recordsList"),
     mascotLine: document.getElementById("mascotLine"),
     toast: document.getElementById("toast"),
+    guidePanel: document.getElementById("guidePanel"),
+    guideToggle: document.getElementById("guideToggle"),
+    guideBody: document.getElementById("guideBody"),
   };
 
   const state = {
@@ -67,6 +71,7 @@
     longPressTimer: null,
     longPressTriggered: false,
     hiddenAt: null,
+    guideExpanded: false,
   };
 
   const mascotLines = {
@@ -86,6 +91,7 @@
     bindActions();
     bindVisibilityPause();
     bindKeyboardInput();
+    initGuide();
     renderRecords();
     startGame();
   }
@@ -153,6 +159,28 @@
       saveJson(STORAGE_RECORDS, state.records);
       renderRecords();
     });
+    els.guideToggle.addEventListener("click", () => setGuideExpanded(!state.guideExpanded));
+  }
+
+  function initGuide() {
+    let seen = true;
+    try {
+      seen = localStorage.getItem(STORAGE_GUIDE_SEEN) === "1";
+      if (!seen) {
+        localStorage.setItem(STORAGE_GUIDE_SEEN, "1");
+      }
+    } catch {
+      seen = false;
+    }
+    setGuideExpanded(!seen);
+  }
+
+  function setGuideExpanded(expanded) {
+    state.guideExpanded = expanded;
+    els.guidePanel.classList.toggle("collapsed", !expanded);
+    els.guideToggle.setAttribute("aria-expanded", String(expanded));
+    els.guideBody.setAttribute("aria-hidden", String(!expanded));
+    els.guideBody.inert = !expanded;
   }
 
   function bindVisibilityPause() {

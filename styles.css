@@ -405,12 +405,75 @@ h1 {
   padding: 10px 12px;
 }
 
+.guide-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 30px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.guide-toggle:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(255, 246, 214, 0.72);
+  transform: none;
+}
+
+.guide-toggle:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+.guide-toggle:focus-visible {
+  outline: 2px solid rgba(123, 75, 97, 0.55);
+  outline-offset: 1px;
+}
+
+.guide-toggle .panel-title {
+  margin: 0;
+}
+
+.guide-chevron {
+  color: #7b4b61;
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.guide-panel.collapsed .guide-chevron {
+  transform: rotate(180deg);
+}
+
+.guide-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 200ms ease, opacity 160ms ease;
+}
+
+.guide-panel.collapsed .guide-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
 .guide-panel ul {
   display: grid;
   gap: 5px;
   margin: 6px 0 0;
   padding: 0;
   list-style: none;
+}
+
+.guide-body > ul {
+  min-height: 0;
+  margin: 0;
+  padding: 6px 0 0;
+  overflow: hidden;
 }
 
 .guide-panel li {
