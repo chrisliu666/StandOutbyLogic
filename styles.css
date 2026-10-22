@@ -131,13 +131,14 @@ h1 {
 .sudoku-board {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  grid-template-rows: repeat(9, 1fr);
+  grid-template-rows: repeat(9, minmax(0, 1fr));
   width: min(100%, 680px, calc(100vh - 300px));
   aspect-ratio: 1;
   margin: 12px auto;
   flex-shrink: 0;
   border: 3px solid var(--line-strong);
   background: var(--line-strong);
+  container-type: inline-size;
   user-select: none;
 }
 
@@ -145,11 +146,13 @@ h1 {
   position: relative;
   display: grid;
   place-items: center;
+  min-width: 0;
+  min-height: 0;
   border: 1px solid var(--line);
   background: rgba(255, 253, 248, 0.96);
   color: var(--ink);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 5.2vw, 44px);
+  font-size: clamp(14px, 6.8cqw, 44px);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -654,6 +657,23 @@ h1 {
 
   .sudoku-board {
     width: min(100%, 680px);
+  }
+}
+
+@media (max-height: 479px) and (min-width: 1021px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .sudoku-board {
+    width: min(100%, 680px, 360px);
   }
 }
 
